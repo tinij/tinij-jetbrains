@@ -1,0 +1,42 @@
+<idea-plugin>
+    <id>com.tinij.intellij.plugin</id>
+    <name>TiniJ</name>
+    <version>0.1.0</version>
+    <vendor email="alex@tinij.com" url="https://tinij.com">TiniJ</vendor>
+
+    <description><![CDATA[
+    Enter short description for your plugin here.<br>
+    <em>most HTML tags may be used</em>
+    ]]></description>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+    <idea-version since-build="123"/>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
+
+    <application-components>
+        <!-- Add your application components here -->
+        <component>
+            <implementation-class>com.tinij.intelij.plugin.Tinij</implementation-class>
+        </component>
+    </application-components>
+
+    <actions>
+        <!-- Add your actions here -->
+        <action id="pluginMenu" class="com.tinij.intelij.plugin.TinijPluginMenu" text="WakaTime">
+            <add-to-group group-id="ToolsMenu" anchor="first" />
+        </action>
+    </actions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>
