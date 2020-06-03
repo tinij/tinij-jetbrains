@@ -5,8 +5,7 @@
     <vendor email="alex@tinij.com" url="https://tinij.com">TiniJ</vendor>
 
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+        Tinij plugin for JetBrains software (including InteiJ, WebStorm, etc
     ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
@@ -17,6 +16,7 @@
     <idea-version since-build="123"/>
     <depends>com.intellij.modules.lang</depends>
     <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
@@ -31,7 +31,7 @@
 
     <actions>
         <!-- Add your actions here -->
-        <action id="pluginMenu" class="com.tinij.intelij.plugin.TinijPluginMenu" text="WakaTime">
+        <action id="pluginMenu" class="com.tinij.intelij.plugin.ui.TinijPluginMenu" text="WakaTime">
             <add-to-group group-id="ToolsMenu" anchor="first" />
         </action>
     </actions>

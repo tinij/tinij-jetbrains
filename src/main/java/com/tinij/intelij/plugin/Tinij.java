@@ -5,29 +5,40 @@ import com.intellij.ide.plugins.PluginManager;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.BaseComponent;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.event.EditorEventMulticaster;
 import com.intellij.openapi.extensions.PluginId;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.PlatformUtils;
 import com.intellij.util.messages.MessageBus;
 import com.intellij.util.messages.MessageBusConnection;
-import com.tinij.intelij.plugin.eventListeners.TinijDocumentListener;
-import com.tinij.intelij.plugin.eventListeners.TinijEditorMouseListener;
-import com.tinij.intelij.plugin.eventListeners.TinijSaveListener;
-import com.tinij.intelij.plugin.eventListeners.TinijVisibleAreaListener;
+import com.tinij.intelij.plugin.eventListeners.*;
+import com.tinij.intelij.plugin.models.ActivityModel;
+import com.tinij.intelij.plugin.services.ActivityComposerService;
+import com.tinij.intelij.plugin.services.ActivityObjectFactory;
+import com.tinij.intelij.plugin.services.ApiService;
+import com.tinij.intelij.plugin.services.QueueHandler;
+import com.tinij.intelij.plugin.utils.TinijConstantsHandler;
 import org.apache.log4j.Logger;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 public class Tinij implements BaseComponent {
     private static final Logger log = (Logger) Logger.getInstance("Tinij");
     private static MessageBusConnection connection;
+    public static Boolean DEBUG = false;
 
     public static String lastFile = null;
     public static BigDecimal lastTime = new BigDecimal(0);
 
-    public static Boolean DEBUG = false;
-    public static Boolean READY_TO_ACTION = false;
+    private ApiService apiService;
+    private QueueHandler queueHandler;
+    private ActivityComposerService activityComposerService;
+    private ActivityObjectFactory activityObjectFactory;
 
     @Override
     public void initComponent() {
@@ -37,24 +48,60 @@ public class Tinij implements BaseComponent {
         TinijConstantsHandler.IDE_NAME = PlatformUtils.getPlatformPrefix();
         TinijConstantsHandler.IDE_VERSION = ApplicationInfo.getInstance().getFullVersion();
 
+        initServices();
         prepareListeners();
     }
 
-    public void prepareListeners() {
+    private void initServices() {
+        this.apiService = new ApiService();
+        this.queueHandler = new QueueHandler(this.apiService);
+        this.activityComposerService = new ActivityComposerService();
+        this.activityObjectFactory = new ActivityObjectFactory(this.activityComposerService);
+
+        this.queueHandler.startQueueWorker();
+    }
+
+
+    private void prepareListeners() {
         ApplicationManager.getApplication().invokeLater(() -> {
             // save file
             MessageBus bus = ApplicationManager.getApplication().getMessageBus();
             connection = bus.connect();
-            connection.subscribe(AppTopics.FILE_DOCUMENT_SYNC, new TinijSaveListener());
+            connection.subscribe(AppTopics.FILE_DOCUMENT_SYNC, new TinijSaveListener(this));
+
+            ProjectManager.getInstance().addProjectManagerListener(new TinijProjectManagerListener(this));
 
             EditorFactory editFactory = EditorFactory.getInstance();
             EditorEventMulticaster editorEventMulticaster = editFactory.getEventMulticaster();
 
-            editorEventMulticaster.addDocumentListener(new TinijDocumentListener());
-            editorEventMulticaster.addEditorMouseListener(new TinijEditorMouseListener());
-            editorEventMulticaster.addVisibleAreaListener(new TinijVisibleAreaListener());
+            editorEventMulticaster.addDocumentListener(new TinijDocumentListener(this));
+            editorEventMulticaster.addEditorMouseListener(new TinijEditorMouseListener(this));
+            editorEventMulticaster.addVisibleAreaListener(new TinijVisibleAreaListener(this));
         });
     }
 
+    public void addActivity(final VirtualFile file, Document project, final boolean isWrite) {
+        this.addActivity(file, this.activityComposerService.getProject(project), isWrite);
+    }
 
+    public void immediatelyInvokeSendingQueue() {
+        this.queueHandler.invokeSendingToBackend();
+    }
+
+
+    public void addActivity(final VirtualFile file, Project project, final boolean isWrite) {
+        if (!TinijHelpers.shouldLogFile(file))
+            return;
+        final BigDecimal time = TinijHelpers.getCurrentTime();
+        if (!isWrite && file.getPath().equals(Tinij.lastFile) && !TinijHelpers.enoughTimePassed(time)) {
+            return;
+        }
+        Tinij.lastFile = file.getPath();
+        Tinij.lastTime = time;
+
+        ApplicationManager.getApplication().executeOnPooledThread((Runnable) () -> {
+            ActivityModel activityModel = this.activityObjectFactory.buildActivity(file, project, Instant.now().toString(), isWrite);
+            this.queueHandler.pushToQueue(activityModel);
+        });
+    }
 }

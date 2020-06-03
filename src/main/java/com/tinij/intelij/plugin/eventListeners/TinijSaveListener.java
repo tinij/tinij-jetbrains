@@ -4,15 +4,23 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.tinij.intelij.plugin.Tinij;
 import org.jetbrains.annotations.NotNull;
 
 public class TinijSaveListener implements FileDocumentManagerListener {
+
+    private Tinij tinij;
+
+    public TinijSaveListener(Tinij tinij) {
+        this.tinij = tinij;
+    }
+
 
     @Override
     public void beforeDocumentSaving(Document document) {
         FileDocumentManager instance = FileDocumentManager.getInstance();
         VirtualFile file = instance.getFile(document);
-
+        this.tinij.addActivity(file, document, true);
     }
 
     @Override
