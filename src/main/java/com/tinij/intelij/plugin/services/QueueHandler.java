@@ -24,11 +24,7 @@ public class QueueHandler {
     }
 
     public void startQueueWorker() {
-        final Runnable handler = new Runnable() {
-            public void run() {
-                processHeartbeatQueue();
-            }
-        };
+        final Runnable handler = this::processHeartbeatQueue;
         long delay = queueTimeoutSeconds;
         scheduledFixture = scheduler.scheduleAtFixedRate(handler, delay, delay, java.util.concurrent.TimeUnit.SECONDS);
     }
@@ -51,10 +47,14 @@ public class QueueHandler {
                 break;
             activeActivities.add(activityModel);
         }
-        sendActivities(activeActivities);
+        boolean success = sendActivities(activeActivities);
+        if (!success) {
+            //re-add everything to queue;
+            activitiesQueue.addAll(activeActivities);
+        }
     }
 
-    private void sendActivities(ArrayList<ActivityModel> activityModels) {
-        this.apiService.sendApiRequest(activityModels);
+    private boolean sendActivities(ArrayList<ActivityModel> activityModels) {
+        return this.apiService.sendApiRequest(activityModels);
     }
 }

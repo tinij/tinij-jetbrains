@@ -4,27 +4,32 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.tinij.intelij.plugin.services.SettingsService;
-import jdk.internal.jline.internal.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.UUID;
 
-public class ApiKeyPanel extends DialogWrapper {
 
+public class SettingsPanel extends DialogWrapper {
     private final JPanel panel;
-    private final JTextField input;
+    private final JLabel apiKeyLabel;
+    private final JTextField apiKey;
     private SettingsService settingsService;
 
-    public ApiKeyPanel(@Nullable Project project, SettingsService settingsService) {
+    public SettingsPanel(@Nullable Project project, SettingsService settingsService) {
         super(project, true);
-        setTitle("Tinij API Key");
-
         this.settingsService = settingsService;
-
+        setTitle("TiniJ Settings");
         setOKButtonText("Save");
         panel = new JPanel();
-        input = new JTextField(36);
-        panel.add(input);
+        panel.setLayout(new GridLayout(0,2));
+
+        apiKeyLabel = new JLabel("API Key:", JLabel.CENTER);
+        panel.add(apiKeyLabel);
+        apiKey = new JTextField(36);
+        apiKey.setText(settingsService.getApiKey());
+        panel.add(apiKey);
 
         init();
     }
@@ -37,23 +42,18 @@ public class ApiKeyPanel extends DialogWrapper {
 
     @Override
     protected ValidationInfo doValidate() {
-        String apiKey = input.getText();
         try {
-            UUID.fromString(apiKey);
+            UUID.fromString(apiKey.getText());
         } catch (Exception e) {
-            return new ValidationInfo("Invalid TiniJ API key.");
+            return new ValidationInfo("Invalid api key.");
         }
         return null;
     }
 
     @Override
     public void doOKAction() {
+        settingsService.setApiKey(apiKey.getText());
         super.doOKAction();
     }
 
-    public String promptForApiKey() {
-        input.setText(settingsService.getApiKey());
-        this.show();
-        return input.getText();
-    }
 }

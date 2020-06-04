@@ -2,6 +2,7 @@ package com.tinij.intelij.plugin.services;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.tinij.intelij.plugin.Tinij;
 import com.tinij.intelij.plugin.utils.TinijConstantsHandler;
 import com.tinij.intelij.plugin.models.*;
 import com.tinij.intelij.plugin.utils.serializers.ActivitySerializer;
@@ -19,8 +20,10 @@ import java.util.ArrayList;
 
 public class ApiService {
     private Gson gson;
+    private SettingsService settingsService;
 
-    public ApiService() {
+    public ApiService(SettingsService settingsService) {
+        this.settingsService = settingsService;
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(ActivityTypeEnum.class, new ActivitySerializer());
         gsonBuilder.registerTypeAdapter(CategoryEnum.class, new CategorySerializer());
@@ -29,7 +32,7 @@ public class ApiService {
         this.gson = gsonBuilder.create();
     }
 
-    Promise<Boolean> sendApiRequest(ArrayList<ActivityModel> activities) {
+    Boolean sendApiRequest(ArrayList<ActivityModel> activities) {
         String json = this.gson.toJson(activities);
 
         HttpClient client = HttpClient.newHttpClient();
@@ -37,7 +40,7 @@ public class ApiService {
                 .uri(URI.create(TinijConstantsHandler.ACTIVITY_URL))
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .header("Content-Type", "application/json")
-                .header("TINIJ-API-KEY", "")
+                .header("TINIJ-API-KEY", settingsService.getApiKey())
                 .header("User-Agent", "tinij/intelij:1.0")
                 .build();
 
@@ -46,13 +49,15 @@ public class ApiService {
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException e) {
-            e.printStackTrace();
+            Tinij.log.error("Request failed: ", e);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Tinij.log.error("Request cancelled: ", e);
         }
 
-        System.out.println(response.body());
+        if (response != null) {
+            System.out.println(response.body());
+        }
 
-        return null;
+        return response.statusCode() == 200;
     };
 }

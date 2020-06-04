@@ -16,9 +16,9 @@ public enum PluginTypeEnum {
     @SerializedName("1")
     CLion(4),
     @SerializedName("1")
-    DataGrip(5),,
+    DataGrip(5),
     @SerializedName("1")
-    AppCode(6),,
+    AppCode(6),
     @SerializedName("1")
     GoLand(7),
     @SerializedName("1")

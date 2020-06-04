@@ -111,6 +111,6 @@ public class ActivityComposerService {
     }
 
     public PluginTypeEnum getCurrentPlugin() {
-        return PluginTypeEnum.IDEA;
+        return PluginTypeEnum.INTELIJ_IDEA;
     }
 }
